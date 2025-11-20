@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 215 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    --primary: 215 85% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 215 20% 95%;
+    --secondary-foreground: 215 25% 15%;
+
+    --muted: 215 20% 96%;
+    --muted-foreground: 215 15% 45%;
+
+    --accent: 180 75% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 145 65% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 215 20% 88%;
+    --input: 215 20% 88%;
+    --ring: 215 85% 35%;
+
+    --radius: 0.75rem;
+
+    /* AI Active Gradient */
+    --gradient-ai-start: 215 85% 45%;
+    --gradient-ai-mid: 180 75% 50%;
+    --gradient-ai-end: 200 80% 55%;
+
+    /* Chat backgrounds */
+    --chat-bg-idle: 0 0% 98%;
+    --chat-bg-active: 215 25% 97%;
+  }
+
+  .dark {
+    --background: 215 30% 8%;
+    --foreground: 0 0% 98%;
+
+    --card: 215 25% 12%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 215 25% 12%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 215 85% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 215 25% 18%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 215 25% 18%;
+    --muted-foreground: 215 15% 65%;
+
+    --accent: 180 75% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 145 65% 50%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 215 25% 20%;
+    --input: 215 25% 20%;
+    --ring: 215 85% 55%;
+
+    /* AI Active Gradient - Dark Mode */
+    --gradient-ai-start: 215 70% 25%;
+    --gradient-ai-mid: 180 60% 30%;
+    --gradient-ai-end: 200 65% 32%;
+
+    /* Chat backgrounds - Dark Mode */
+    --chat-bg-idle: 215 30% 8%;
+    --chat-bg-active: 215 30% 10%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
