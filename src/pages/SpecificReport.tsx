@@ -204,7 +204,7 @@ const getBackLink = (role: string | null) => {
 
 const getScoreColor = (score?: number) => {
   if (score === undefined || score === null) return "text-muted-foreground";
-  if (score >= 85) return "text-green-600";
+  if (score >= 80) return "text-green-600";
   if (score >= 50) return "text-orange-600";
   return "text-red-600";
 };
@@ -243,6 +243,74 @@ export default function SpecificReport() {
   >([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+
+  // Add new state near the top of your component
+  const [selectedSubParameter, setSelectedSubParameter] = React.useState<{
+    clusterName: string;
+    paramName: string;
+    subParamName: string;
+  } | null>(null);
+
+  const [openParameterItems, setOpenParameterItems] = React.useState<string[]>(
+    []
+  );
+  const highlightTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Add cleanup effect
+  React.useEffect(() => {
+    return () => {
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Create click handler
+  const handleHighlightClick = (
+    clusterName: string,
+    paramName: string,
+    subParamName: string
+  ) => {
+    // Clear any existing highlight timeout
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+    }
+
+    // Open parent cluster accordion
+    setOpenAccordionItems((prev) =>
+      prev.includes(clusterName) ? prev : [...prev, clusterName]
+    );
+
+    // Open parameter accordion using composite key
+    const paramKey = `${clusterName}|${paramName}`;
+    setOpenParameterItems((prev) =>
+      prev.includes(paramKey) ? prev : [...prev, paramKey]
+    );
+
+    // Set selected sub-parameter
+    setSelectedSubParameter({ clusterName, paramName, subParamName });
+
+    // Scroll to and highlight the element after accordions animate
+    setTimeout(() => {
+      const elementId = `sub-param-${subParamName.replace(
+        /[^a-zA-Z0-9]/g,
+        "-"
+      )}`;
+      const element = document.getElementById(elementId);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        // Apply visual highlight
+        element.classList.add("ring-2", "ring-primary", "bg-primary/5");
+
+        // Auto-remove highlight after 3 seconds
+        highlightTimeoutRef.current = setTimeout(() => {
+          element.classList.remove("ring-2", "ring-primary", "bg-primary/5");
+          setSelectedSubParameter(null);
+        }, 3000);
+      }
+    }, 500);
+  };
 
   // UI State
   const [isShareDialogOpen, setIsShareDialogOpen] = React.useState(false);
@@ -418,6 +486,8 @@ export default function SpecificReport() {
           Object.entries(data.detailed_viability_assessment.clusters).forEach(
             ([clusterName, params]) => {
               Object.entries(params).forEach(([paramName, subParams]) => {
+                console.log(params);
+
                 Object.entries(subParams).forEach(([subParamName, data]) => {
                   if (data.assignedScore !== undefined) {
                     const score = data.assignedScore;
@@ -748,14 +818,23 @@ export default function SpecificReport() {
                         {topPerformers.length > 0 ? (
                           topPerformers.map((item, i) => (
                             <li key={i}>
-                              <div className="flex justify-between w-full hover:bg-muted p-1 rounded-md transition-colors">
-                                <span className="text-muted-foreground">
+                              <button
+                                onClick={() =>
+                                  handleHighlightClick(
+                                    item.clusterName,
+                                    item.paramName,
+                                    item.name
+                                  )
+                                }
+                                className="flex justify-between w-full hover:bg-muted p-3 rounded-md transition-colors cursor-pointer text-left group"
+                              >
+                                <span className="text-muted-foreground group-hover:text-foreground">
                                   {item.name}
                                 </span>
                                 <span className="font-bold text-green-600">
                                   {item.score}
                                 </span>
-                              </div>
+                              </button>
                             </li>
                           ))
                         ) : (
@@ -774,14 +853,23 @@ export default function SpecificReport() {
                         {bottomPerformers.length > 0 ? (
                           bottomPerformers.map((item, i) => (
                             <li key={i}>
-                              <div className="flex justify-between w-full hover:bg-muted p-1 rounded-md transition-colors">
-                                <span className="text-muted-foreground">
+                              <button
+                                onClick={() =>
+                                  handleHighlightClick(
+                                    item.clusterName,
+                                    item.paramName,
+                                    item.name
+                                  )
+                                }
+                                className="flex justify-between w-full hover:bg-muted p-3 rounded-md transition-colors cursor-pointer text-left group"
+                              >
+                                <span className="text-muted-foreground group-hover:text-foreground">
                                   {item.name}
                                 </span>
                                 <span className="font-bold text-red-600">
                                   {item.score}
                                 </span>
-                              </div>
+                              </button>
                             </li>
                           ))
                         ) : (
@@ -895,8 +983,9 @@ export default function SpecificReport() {
                         </AccordionTrigger>
                         <AccordionContent className="p-4 pt-0 space-y-4">
                           <Accordion
-                            type="single"
-                            collapsible
+                            type="multiple"
+                            value={openParameterItems}
+                            onValueChange={setOpenParameterItems}
                             className="w-full"
                           >
                             {Object.entries(clusterData).map(
@@ -906,14 +995,45 @@ export default function SpecificReport() {
                                   paramData === null
                                 )
                                   return null;
+
+                                const scores = Object.values(paramData)
+                                  .filter(
+                                    (p) =>
+                                      typeof p === "object" &&
+                                      p !== null &&
+                                      p.assignedScore !== undefined
+                                  )
+                                  .map((p) => p.assignedScore);
+
+                                const categoryAverage =
+                                  scores.length > 0
+                                    ? Math.round(
+                                        (scores.reduce((a, b) => a + b, 0) /
+                                          scores.length) *
+                                          100
+                                      ) / 100
+                                    : 0;
+
+                                const paramKey = `${clusterName}|${paramName}`;
+
                                 return (
                                   <AccordionItem
-                                    value={paramName}
-                                    key={paramName}
+                                    value={paramKey}
+                                    key={paramKey}
                                   >
                                     <AccordionTrigger className="font-semibold mb-2 hover:no-underline">
                                       <div className="flex justify-between items-center w-full pr-2">
                                         <span>{paramName}</span>
+                                        <span
+                                          className={cn(
+                                            "flex items-center justify-center text-base font-bold",
+                                            getScoreColor(
+                                              parseInt(categoryAverage)
+                                            )
+                                          )}
+                                        >
+                                          {parseInt(categoryAverage)}
+                                        </span>
                                       </div>
                                     </AccordionTrigger>
                                     <AccordionContent>
@@ -937,7 +1057,7 @@ export default function SpecificReport() {
                                             const whatCanBeImproved =
                                               subParamData.whatCanBeImproved ||
                                               "No data";
-                                            const id = `sub-param-${subParamName.replace(
+                                            const elementId = `sub-param-${subParamName.replace(
                                               /[^a-zA-Z0-9]/g,
                                               "-"
                                             )}`;
@@ -948,11 +1068,23 @@ export default function SpecificReport() {
                                               subCircumference -
                                               (score / 100) * subCircumference;
 
+                                            const isHighlighted =
+                                              selectedSubParameter?.clusterName ===
+                                                clusterName &&
+                                              selectedSubParameter?.paramName ===
+                                                paramName &&
+                                              selectedSubParameter?.subParamName ===
+                                                subParamName;
+
                                             return (
                                               <div
                                                 key={subParamName}
-                                                id={id}
-                                                className="p-3 grid grid-cols-1 md:grid-cols-12 gap-4 items-center scroll-mt-20"
+                                                id={elementId}
+                                                className={cn(
+                                                  "p-3 grid grid-cols-1 md:grid-cols-12 gap-4 items-center scroll-mt-20 transition-all duration-300",
+                                                  isHighlighted &&
+                                                    "ring-2 ring-primary bg-primary/5"
+                                                )}
                                               >
                                                 <div className="md:col-span-3">
                                                   <h6 className="font-medium text-sm">
