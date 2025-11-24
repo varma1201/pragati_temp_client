@@ -1139,7 +1139,9 @@ export default function SpecificReport() {
                                                   <div className="flex items-start gap-2 text-sm">
                                                     <ThumbsUp className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
                                                     <p className="text-muted-foreground flex-1 break-words">
-                                                      {whatWentWell}
+                                                      <ExpandableText
+                                                        text={whatWentWell}
+                                                      />
                                                     </p>
                                                   </div>
                                                 </div>
@@ -1292,3 +1294,32 @@ export default function SpecificReport() {
     </TooltipProvider>
   );
 }
+
+const ExpandableText = ({ text }) => {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const maxLength = 250;
+
+  if (!text) return null;
+
+  const shouldTruncate = text.length > maxLength;
+
+  return (
+    <p className="text-muted-foreground flex-1 break-words">
+      {isExpanded || !shouldTruncate
+        ? text
+        : `${text.substring(0, maxLength)}...`}
+
+      {shouldTruncate && (
+        <span
+          onClick={(e) => {
+            e.stopPropagation(); // Prevents the accordion from toggling when clicking this
+            setIsExpanded(!isExpanded);
+          }}
+          className="ml-1 cursor-pointer font-medium text-[12px] text-[#0047ff] hover:underline"
+        >
+          {isExpanded ? " Read Less" : " Read More"}
+        </span>
+      )}
+    </p>
+  );
+};
